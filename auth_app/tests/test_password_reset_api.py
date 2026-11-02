@@ -138,6 +138,10 @@ class PasswordResetEmailTests(TestCase):
         self.assertIn("24 hours", html)
         self.assertIn("Reset password", html)
 
+    def test_task_sends_email_to_active_user(self):
+        send_password_reset_email_task(create_user().pk)
+        self.assertEqual(len(mail.outbox), 1)
+
     def test_task_skips_inactive_users(self):
         user = create_user(is_active=False)
         send_password_reset_email_task(user.pk)

@@ -85,6 +85,16 @@ class FFmpegIntegrationTests(TempMediaMixin, SimpleTestCase):
         with self.assertRaises(FFmpegError):
             probe_video(text_file)
 
+    def test_probe_rejects_audio_only_files(self):
+        audio_only = self.media_root / "audio.m4a"
+        subprocess.run(
+            ["ffmpeg", "-loglevel", "error", "-f", "lavfi",
+             "-i", "sine=duration=1", str(audio_only)],
+            check=True,
+        )
+        with self.assertRaisesMessage(FFmpegError, "no video stream"):
+            probe_video(audio_only)
+
     def test_vod_playlists_are_written_for_all_resolutions(self):
         for resolution in ("480p", "720p", "1080p"):
             with self.subTest(resolution=resolution):
