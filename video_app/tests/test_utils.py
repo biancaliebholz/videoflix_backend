@@ -43,9 +43,17 @@ class HlsPathTests(SimpleTestCase):
             "/media-root/hls/5/480p/segment_012.ts",
         )
         for name in ("../secret.ts", "segment_1.ts", "index.m3u8",
-                     "segment_000.ts/../../x.ts", "segment_000.mp4"):
+                     "segment_000.ts/../../x.ts", "segment_000.mp4",
+                     "1.ts", "000.ts\n", "segment_000.ts\n", "x000.ts"):
             with self.subTest(name=name):
                 self.assertIsNone(segment_path(5, "480p", name))
+
+    def test_documented_short_name_maps_to_generated_file(self):
+        """The school docs use ``000.ts``; files are ``segment_000.ts``."""
+        self.assertEqual(
+            segment_path(5, "480p", "000.ts"),
+            segment_path(5, "480p", "segment_000.ts"),
+        )
 
     def test_hls_dir_only_accepts_numeric_ids(self):
         self.assertEqual(str(hls_dir("7")), "/media-root/hls/7")

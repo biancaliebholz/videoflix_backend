@@ -16,7 +16,9 @@ RESOLUTIONS = {
     "1080p": (1920, 1080),
 }
 PLAYLIST_NAME = "index.m3u8"
-SEGMENT_PATTERN = re.compile(r"^segment_\d{3,6}\.ts$")
+# Accepts generated names (segment_000.ts) and the short form of the school
+# docs (000.ts); only the captured digits are used to build the file name.
+SEGMENT_PATTERN = re.compile(r"(?:segment_)?(\d{3,6})\.ts")
 
 
 def video_upload_path(instance, filename):
@@ -38,6 +40,7 @@ def playlist_path(video_id, resolution):
 
 
 def segment_path(video_id, resolution, segment):
-    if resolution not in RESOLUTIONS or not SEGMENT_PATTERN.match(segment):
+    match = SEGMENT_PATTERN.fullmatch(segment)
+    if resolution not in RESOLUTIONS or match is None:
         return None
-    return hls_dir(video_id) / resolution / segment
+    return hls_dir(video_id) / resolution / f"segment_{match.group(1)}.ts"

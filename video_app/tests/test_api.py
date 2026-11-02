@@ -60,7 +60,7 @@ class HLSApiTests(TempMediaMixin, APITestCase):
     def setUp(self):
         authenticate(self.client)
         self.video = create_video()
-        write_hls_files(self.video.pk, "480p")
+        self.hls_folder = write_hls_files(self.video.pk, "480p")
 
     def get(self, path):
         return self.client.get(f"/api/video/{path}")
@@ -79,6 +79,15 @@ class HLSApiTests(TempMediaMixin, APITestCase):
                 response = self.get(f"{self.video.pk}/480p/{suffix}")
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(response["Content-Type"], "video/MP2T")
+
+    def test_documented_segment_url_serves_the_real_file(self):
+        expected = (self.hls_folder / "segment_000.ts").read_bytes()
+        for segment in ("000.ts/", "segment_000.ts/"):
+            with self.subTest(segment=segment):
+                response = self.get(f"{self.video.pk}/480p/{segment}")
+                self.assertEqual(response.status_code, 200)
+                body = b"".join(response.streaming_content)
+                self.assertEqual(body, expected)
 
     def test_missing_or_invalid_files_return_404(self):
         pending = create_video(Video.Status.PROCESSING)
