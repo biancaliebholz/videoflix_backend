@@ -68,11 +68,17 @@ class TokenRefreshApiTests(CookieSessionTestCase):
     def test_valid_refresh_cookie_sets_new_access_cookie(self):
         response = self.post("token_refresh")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {"detail": "Token refreshed"})
         new_access = response.cookies["access_token"]
         self.assertTrue(new_access["httponly"])
         user_id = AccessToken(new_access.value)["user_id"]
         self.assertEqual(user_id, str(self.user.id))
+
+    def test_response_body_matches_school_docs(self):
+        response = self.post("token_refresh")
+        self.assertEqual(response.data, {
+            "detail": "Token refreshed",
+            "access": response.cookies["access_token"].value,
+        })
 
     def test_missing_refresh_cookie_returns_400(self):
         del self.client.cookies["refresh_token"]

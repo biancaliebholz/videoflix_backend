@@ -83,13 +83,16 @@ class LoginView(PublicAPIView):
 
 
 class TokenRefreshView(PublicAPIView):
+    """The ``access`` field follows the school docs; clients use the cookie."""
 
     def post(self, request):
         raw_refresh = request.COOKIES.get(REFRESH_COOKIE)
         if not raw_refresh:
             return Response(REFRESH_TOKEN_MISSING, status=400)
         access_token = refresh_access_token(raw_refresh)
-        response = Response({"detail": "Token refreshed"})
+        response = Response(
+            {"detail": "Token refreshed", "access": str(access_token)}
+        )
         set_access_cookie(response, access_token)
         return response
 
