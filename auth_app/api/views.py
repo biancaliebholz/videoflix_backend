@@ -5,7 +5,17 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from auth_app.api.permissions import IsTrustedOrigin
-from auth_app.api.serializers import LoginSerializer, RegistrationSerializer
+from auth_app.api.serializers import (
+    LoginSerializer,
+    PasswordConfirmSerializer,
+    PasswordResetSerializer,
+    RegistrationSerializer,
+)
+from auth_app.services.password_reset_service import (
+    get_user_for_reset,
+    request_password_reset,
+    reset_password,
+)
 from auth_app.services.registration_service import activate_user
 from auth_app.services.session_service import (
     create_token_pair,
@@ -21,6 +31,7 @@ from auth_app.utils import (
 )
 
 REFRESH_TOKEN_MISSING = {"detail": "Refresh token missing."}
+INVALID_RESET_LINK = {"detail": "The reset link is invalid or has expired."}
 
 
 class PublicAPIView(APIView):
@@ -96,3 +107,30 @@ class LogoutView(PublicAPIView):
         })
         delete_auth_cookies(response)
         return response
+
+
+class PasswordResetView(PublicAPIView):
+
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        request_password_reset(serializer.validated_data["email"])
+        return Response(
+            {"detail": "An email has been sent to reset your password."}
+        )
+
+
+class PasswordConfirmView(PublicAPIView):
+
+    def post(self, request, uidb64, token):
+        user = get_user_for_reset(uidb64, token)
+        if user is None:
+            return Response(INVALID_RESET_LINK, status=400)
+        serializer = PasswordConfirmSerializer(
+            data=request.data, context={"user": user}
+        )
+        serializer.is_valid(raise_exception=True)
+        reset_password(user, serializer.validated_data["new_password"])
+        return Response(
+            {"detail": "Your Password has been successfully reset."}
+        )

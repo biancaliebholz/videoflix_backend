@@ -71,3 +71,28 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError({"detail": GENERIC_ERROR})
         attrs["user"] = user
         return attrs
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordConfirmSerializer(serializers.Serializer):
+    """Expects the user of the reset link as ``context["user"]``."""
+
+    new_password = serializers.CharField(
+        write_only=True, trim_whitespace=False
+    )
+    confirm_password = serializers.CharField(
+        write_only=True, trim_whitespace=False
+    )
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError(
+                {"confirm_password": "Passwords do not match."}
+            )
+        validate_password_strength(
+            attrs["new_password"], self.context["user"], field="new_password"
+        )
+        return attrs

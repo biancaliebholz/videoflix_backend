@@ -4,6 +4,7 @@ from email.mime.image import MIMEImage
 from pathlib import Path
 
 from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 
@@ -22,6 +23,13 @@ def send_activation_email(user):
     token = account_activation_token.make_token(user)
     link = build_frontend_link("activate.html", encode_uid(user), token)
     send_templated_email(user, "Confirm your email", "activation", link)
+
+
+def send_password_reset_email(user):
+    token = default_token_generator.make_token(user)
+    page = "confirm_password.html"
+    link = build_frontend_link(page, encode_uid(user), token)
+    send_templated_email(user, "Reset your Password", "password_reset", link)
 
 
 def send_templated_email(user, subject, template_name, link):

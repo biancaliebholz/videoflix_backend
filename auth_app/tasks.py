@@ -19,8 +19,18 @@ def send_activation_email_task(user_id):
         email_service.send_activation_email(user)
 
 
+def send_password_reset_email_task(user_id):
+    user = User.objects.filter(pk=user_id, is_active=True).first()
+    if user is not None:
+        email_service.send_password_reset_email(user)
+
+
 def queue_activation_email(user_id):
     _queue_email(send_activation_email_task, user_id)
+
+
+def queue_password_reset_email(user_id):
+    _queue_email(send_password_reset_email_task, user_id)
 
 
 def _queue_email(task, user_id):
