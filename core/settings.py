@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'auth_app',
+    'video_app',
 ]
 
 MIDDLEWARE = [
@@ -181,6 +182,11 @@ CORS_ALLOWED_ORIGINS = CSRF_TRUSTED_ORIGINS
 CORS_ALLOW_CREDENTIALS = True
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:5500").rstrip("/")
+
+
+# Video processing (Django RQ job limit for one conversion)
+
+VIDEO_PROCESSING_TIMEOUT = int(os.getenv("VIDEO_PROCESSING_TIMEOUT", "10800"))
 
 
 # Email
