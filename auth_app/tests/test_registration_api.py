@@ -81,6 +81,15 @@ class RegistrationApiTests(APITestCase):
             set(response.data), {"email", "password", "confirmed_password"}
         )
 
+    def test_documented_request_without_privacy_policy_works(self, queue):
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(self.url, {
+                "email": "user@example.com",
+                "password": PASSWORD,
+                "confirmed_password": PASSWORD,
+            }, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
     def test_accepted_privacy_policy_from_frontend_form(self, queue):
         response = self.register(privacy_policy="on")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

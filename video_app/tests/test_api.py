@@ -44,6 +44,13 @@ class VideoListApiTests(TempMediaMixin, APITestCase):
             "http://testserver/media/thumbnails/"
         ))
 
+    def test_response_is_a_plain_json_array(self):
+        authenticate(self.client)
+        create_video()
+        response = self.client.get(self.url)
+        self.assertEqual(response["Content-Type"], "application/json")
+        self.assertIsInstance(response.json(), list)
+
     def test_newest_videos_come_first(self):
         authenticate(self.client)
         older = create_video(title="Older")

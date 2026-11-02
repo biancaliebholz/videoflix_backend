@@ -128,6 +128,16 @@ class FFmpegIntegrationTests(TempMediaMixin, SimpleTestCase):
         self.assertTrue((self.output / "480p" / "index.m3u8").exists())
         self.assertFalse((self.media_root / "hls" / "1.converting").exists())
 
+    def test_reconversion_replaces_previous_output(self):
+        output = self.media_root / "hls" / "2"
+        convert_to_hls(self.source, output, has_audio=True)
+        stale_file = output / "480p" / "segment_999.ts"
+        stale_file.write_bytes(b"old")
+        convert_to_hls(self.source, output, has_audio=True)
+        self.assertFalse(stale_file.exists())
+        self.assertTrue((output / "1080p" / "index.m3u8").exists())
+        self.assertFalse((self.media_root / "hls" / "2.old").exists())
+
     def test_thumbnail_is_extracted(self):
         target = self.media_root / "thumb.jpg"
         extract_thumbnail(self.source, target, at_seconds=1)
