@@ -10,14 +10,45 @@ The video files are **not** part of this repository (they are 30–280 MB
 each). Download them from the sources below and upload them via the Django
 admin (`/admin/video_app/video/add/`).
 
-| Title | Year | Runtime | Source resolution | Category | License | Credit |
-|---|---|---|---|---|---|---|
-| Big Buck Bunny | 2008 | 10:35 | 1920×1080, 30 fps | Animation | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | (c) copyright 2008, Blender Foundation / www.bigbuckbunny.org |
-| Sprite Fright | 2021 | 10:30 | 2048×858 | Comedy | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Blender Studio |
-| Charge | 2022 | 4:23 | 3840×1608 | Action | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Blender Studio |
-| Wing It! | 2023 | 3:58 | 1920×1080 | Comedy | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Blender Studio |
-| Hero | 2018 | 3:57 | 2048×858 | Action | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Blender Foundation |
-| Coffee Run | 2020 | 3:05 | 1920×804 | Drama | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Blender Foundation |
+| Title | Year | Runtime | Category | License | Required credit |
+|---|---|---|---|---|---|
+| Big Buck Bunny | 2008 | 10:34.6 | Animation | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) | (c) copyright 2008, Blender Foundation / www.bigbuckbunny.org |
+| Sprite Fright | 2021 | 10:29.9 | Comedy | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Blender Studio |
+| Charge | 2022 | 4:22.7 | Action | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Blender Studio |
+| Wing It! | 2023 | 3:57.9 | Comedy | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Blender Studio |
+| Hero | 2018 | 3:56.7 | Action | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Blender Foundation |
+| Coffee Run | 2020 | 3:04.6 | Drama | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | Blender Foundation |
+
+Runtimes are the values measured with `ffprobe` on the downloaded files; the
+same values are stored as `duration` after processing.
+
+## Full or trimmed, resolutions
+
+All six films were uploaded **complete** (including credits), without any
+trimming or re-encoding before the upload. The Big Buck Bunny file is the 2013
+"sunflower" 1080p/30 fps render of the 2008 film published by the Blender
+Foundation; content and license are the same.
+
+| Title | Source file | Created HLS renditions (480p / 720p / 1080p) |
+|---|---|---|
+| Big Buck Bunny | H.264, 1920×1080, 30 fps | 854×480 / 1280×720 / 1920×1080 |
+| Sprite Fright | VP9, 2048×858, 24 fps | 854×358 / 1280×536 / 1920×804 |
+| Charge | VP9, 3840×1608, 24 fps | 854×358 / 1280×536 / 1920×804 |
+| Wing It! | VP9, 1920×1080, 24 fps | 854×480 / 1280×720 / 1920×1080 |
+| Hero | VP9, 2048×858, 23.976 fps | 854×358 / 1280×536 / 1920×804 |
+| Coffee Run | VP9, 1920×804, 24 fps | 854×358 / 1280×536 / 1920×804 |
+
+Wide films keep their aspect ratio inside the 16:9 box of each rendition.
+
+## Local storage
+
+- Downloaded originals: a folder next to the repository (`../demo_videos/`),
+  never inside the Git repository.
+- After the upload, inside the Docker volume `videoflix_media`
+  (mounted at `/app/media`):
+  - original upload: `media/videos/<random-name>.<ext>`
+  - HLS output: `media/hls/<video id>/<480p|720p|1080p>/index.m3u8` and `segment_000.ts` …
+  - thumbnail: `media/thumbnails/<random-name>.jpg`
 
 ## Download sources
 
