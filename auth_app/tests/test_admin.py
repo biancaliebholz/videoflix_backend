@@ -29,7 +29,6 @@ class UserAdminTests(TestCase):
         self.assertEqual(self.client.get(url).status_code, 200)
 
     def test_add_page_creates_user_with_normalized_email(self):
-        """Users created in the admin get a canonical email."""
         response = self.client.post(
             reverse("admin:auth_app_user_add"),
             {

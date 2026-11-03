@@ -7,10 +7,12 @@ from video_app.services.processing_service import process_video
 
 
 def process_video_task(video_id):
+    """RQ entry point; the job fails when the conversion raises."""
     process_video(video_id)
 
 
 def queue_video_processing(video_id):
+    """Queue a conversion; full films need the long job timeout."""
     django_rq.enqueue(
         process_video_task,
         video_id,

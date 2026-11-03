@@ -41,6 +41,7 @@ def get_user_by_uid(uidb64):
 
 
 def build_frontend_link(page, uidb64, token):
+    """Link to a school frontend page in ``pages/auth/`` with uid and token."""
     query = urlencode({"uid": uidb64, "token": token})
     return f"{settings.FRONTEND_URL}/pages/auth/{page}?{query}"
 
@@ -61,6 +62,7 @@ def set_refresh_cookie(response, refresh_token):
 
 
 def set_auth_cookies(response, refresh_token):
+    """Set both cookies from a simplejwt ``RefreshToken`` instance."""
     set_access_cookie(response, refresh_token.access_token)
     set_refresh_cookie(response, refresh_token)
 

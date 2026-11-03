@@ -10,6 +10,11 @@ IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"]
 
 
 class Video(models.Model):
+    """Uploaded video with the state of its background conversion.
+
+    Only ``ready`` videos are listed and streamed; the default ordering
+    (newest first) is the order of the video list API.
+    """
 
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"

@@ -46,6 +46,11 @@ class PublicAPIView(APIView):
 
 
 class RegisterView(PublicAPIView):
+    """Create an inactive account and queue the activation email.
+
+    Unlike the school docs, the response holds no activation token: a
+    usable token would let anyone activate a foreign email address.
+    """
 
     def post(self, request):
         serializer = RegistrationSerializer(data=request.data)
@@ -56,6 +61,7 @@ class RegisterView(PublicAPIView):
 
 
 class ActivateView(PublicAPIView):
+    """Activate an account; each link works once and expires after 24 h."""
 
     def get(self, request, uidb64, token):
         if activate_user(uidb64, token):
@@ -67,6 +73,10 @@ class ActivateView(PublicAPIView):
 
 
 class LoginView(PublicAPIView):
+    """Log in with email and password and set both JWT cookies.
+
+    Wrong passwords, unknown and inactive accounts get the same 400.
+    """
 
     def post(self, request):
         serializer = LoginSerializer(
@@ -98,6 +108,7 @@ class TokenRefreshView(PublicAPIView):
 
 
 class LogoutView(PublicAPIView):
+    """Blacklist the refresh token, revoke the access token, drop cookies."""
 
     def post(self, request):
         raw_refresh = request.COOKIES.get(REFRESH_COOKIE)
@@ -113,6 +124,7 @@ class LogoutView(PublicAPIView):
 
 
 class PasswordResetView(PublicAPIView):
+    """Same 200 answer for known and unknown addresses (no enumeration)."""
 
     def post(self, request):
         serializer = PasswordResetSerializer(data=request.data)
@@ -124,6 +136,7 @@ class PasswordResetView(PublicAPIView):
 
 
 class PasswordConfirmView(PublicAPIView):
+    """Set a new password via a reset link and end all old sessions."""
 
     def post(self, request, uidb64, token):
         user = get_user_for_reset(uidb64, token)

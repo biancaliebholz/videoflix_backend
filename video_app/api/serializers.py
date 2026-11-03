@@ -4,6 +4,8 @@ from video_app.models import Video
 
 
 class VideoListSerializer(serializers.ModelSerializer):
+    """Field names exactly as in the school API documentation."""
+
     thumbnail_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -14,6 +16,7 @@ class VideoListSerializer(serializers.ModelSerializer):
         ]
 
     def get_thumbnail_url(self, video):
+        """Absolute URL, because the frontend runs on another origin."""
         if not video.thumbnail:
             return None
         return self.context["request"].build_absolute_uri(video.thumbnail.url)

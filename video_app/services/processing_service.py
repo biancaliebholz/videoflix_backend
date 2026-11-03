@@ -17,11 +17,7 @@ from video_app.utils import hls_dir
 
 
 def process_video(video_id):
-    """Create thumbnail and HLS renditions and track the status.
-
-    A failure is stored on the video and re-raised so the RQ job is marked
-    as failed as well. Deleted videos are skipped silently.
-    """
+    """Convert a video and track its status; errors also fail the RQ job."""
     video = Video.objects.filter(pk=video_id).first()
     if video is None:
         return
@@ -35,6 +31,7 @@ def process_video(video_id):
 
 
 def delete_video_files(video_file_name, thumbnail_name, video_id):
+    """Delete original, thumbnail and HLS folder; missing files are fine."""
     for name in (video_file_name, thumbnail_name):
         if name:
             default_storage.delete(name)

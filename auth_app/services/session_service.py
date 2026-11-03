@@ -16,6 +16,7 @@ REVOKED_ACCESS_KEY = "revoked-access-token:{jti}"
 
 
 def create_token_pair(user):
+    """Return a new ``RefreshToken`` (incl. access token) for a login."""
     update_last_login(None, user)
     return RefreshToken.for_user(user)
 
@@ -47,11 +48,13 @@ def logout_user(raw_refresh, raw_access=None):
 
 
 def is_access_token_revoked(access_token):
+    """Tell whether a logout revoked this still unexpired access token."""
     key = REVOKED_ACCESS_KEY.format(jti=access_token["jti"])
     return cache.get(key) is not None
 
 
 def blacklist_all_refresh_tokens(user):
+    """Invalidate every refresh token of ``user``, e.g. after a reset."""
     for token in OutstandingToken.objects.filter(user=user):
         BlacklistedToken.objects.get_or_create(token=token)
 

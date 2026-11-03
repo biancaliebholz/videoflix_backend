@@ -33,10 +33,7 @@ def send_password_reset_email(user):
 
 
 def send_templated_email(user, subject, template_name, link):
-    """Send a text email with HTML alternative and inline logo.
-
-    Uses ``auth_app/emails/<template_name>.txt`` and ``.html``.
-    """
+    """Send ``auth_app/emails/<template_name>`` as text, HTML and logo."""
     context = {"user": user, "link": link, "logo_cid": LOGO_CID}
     message = EmailMultiAlternatives(
         subject=subject,

@@ -17,11 +17,14 @@ SEGMENT_CONTENT_TYPE = "video/MP2T"
 
 
 class VideoListView(ListAPIView):
+    """Plain JSON array of ready videos, newest first (JWT cookie)."""
+
     serializer_class = VideoListSerializer
     queryset = Video.objects.filter(status=Video.Status.READY)
 
 
 class HLSPlaylistView(APIView):
+    """HLS playlist of one resolution (JWT cookie required)."""
 
     def get(self, request, movie_id, resolution):
         path = playlist_path(movie_id, resolution)
@@ -29,6 +32,7 @@ class HLSPlaylistView(APIView):
 
 
 class HLSSegmentView(APIView):
+    """MPEG-TS segment; accepts ``000.ts`` and ``segment_000.ts``."""
 
     def get(self, request, movie_id, resolution, segment):
         path = segment_path(movie_id, resolution, segment)

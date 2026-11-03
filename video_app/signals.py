@@ -11,6 +11,7 @@ from video_app.tasks import queue_video_processing
 
 @receiver(pre_save, sender=Video)
 def remember_previous_video_file(sender, instance, **kwargs):
+    """Keep the old file name so ``post_save`` can detect a new upload."""
     previous = sender.objects.filter(pk=instance.pk).values_list(
         "video_file", flat=True
     )
@@ -35,6 +36,7 @@ def queue_processing_after_upload(sender, instance, created, **kwargs):
 
 @receiver(post_delete, sender=Video)
 def delete_files_of_deleted_video(sender, instance, **kwargs):
+    """Remove original, thumbnail and HLS files once the delete commits."""
     names = (instance.video_file.name, instance.thumbnail.name, instance.pk)
     transaction.on_commit(lambda: delete_video_files(*names))
 

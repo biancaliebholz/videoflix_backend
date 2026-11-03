@@ -29,6 +29,7 @@ class VideoInfo:
 
 
 def probe_video(source):
+    """Return duration and audio flag; ``FFmpegError`` if there is no video."""
     output = _run([
         "ffprobe", "-v", "error", "-print_format", "json",
         "-show_format", "-show_streams", str(source),
@@ -50,12 +51,7 @@ def extract_thumbnail(source, target, at_seconds):
 
 
 def convert_to_hls(source, output_dir, has_audio):
-    """Write all renditions to ``output_dir/<resolution>/``.
-
-    The conversion runs in a sibling temp folder that replaces the old
-    output only after FFmpeg succeeded, so players never see half
-    written playlists and a failed run keeps the previous version.
-    """
+    """Write all renditions to ``output_dir/<resolution>/`` atomically."""
     output_dir = Path(output_dir)
     work_dir = output_dir.with_name(f"{output_dir.name}.converting")
     shutil.rmtree(work_dir, ignore_errors=True)
@@ -69,6 +65,7 @@ def convert_to_hls(source, output_dir, has_audio):
 
 
 def build_hls_command(source, output_dir, has_audio):
+    """Return the single-pass FFmpeg command for all renditions."""
     names = list(RESOLUTIONS)
     command = [
         "ffmpeg", "-hide_banner", "-nostdin", "-y", "-i", str(source),
@@ -131,6 +128,10 @@ def _create_rendition_dirs(base_dir):
 
 
 def _replace_dir(new_dir, target_dir):
+    """Swap in finished output; players never see half written playlists.
+
+    A failed conversion never reaches this point and keeps the old files.
+    """
     old_dir = target_dir.with_name(f"{target_dir.name}.old")
     shutil.rmtree(old_dir, ignore_errors=True)
     if target_dir.exists():
@@ -140,6 +141,7 @@ def _replace_dir(new_dir, target_dir):
 
 
 def _run(command):
+    """Run a command; raise ``FFmpegError`` with the end of its stderr."""
     result = subprocess.run(command, capture_output=True, text=True)
     if result.returncode != 0:
         raise FFmpegError(result.stderr.strip()[-2000:] or "ffmpeg failed")

@@ -20,6 +20,11 @@ def validate_password_strength(password, user, field="password"):
 
 
 class RegistrationSerializer(serializers.Serializer):
+    """Payload of the school docs plus the frontend's optional checkbox.
+
+    ``privacy_policy`` is not required, but must be true when it is sent.
+    """
+
     email = serializers.EmailField(max_length=EMAIL_MAX_LENGTH)
     password = serializers.CharField(write_only=True, trim_whitespace=False)
     confirmed_password = serializers.CharField(
