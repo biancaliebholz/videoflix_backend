@@ -50,6 +50,17 @@ Wide films keep their aspect ratio inside the 16:9 box of each rendition.
   - HLS output: `media/hls/<video id>/<480p|720p|1080p>/index.m3u8` and `segment_000.ts` …
   - thumbnail: `media/thumbnails/<random-name>.jpg`
 
+## Adding the films
+
+1. Download the films from the sources below.
+2. Open **http://127.0.0.1:8000/admin/** → *Videos* → *Add video*. Enter the
+   title, the description from [below](#descriptions-used-in-the-demo) (it
+   contains the credit) and the category from the table above, choose the
+   file and save. A thumbnail is optional; without one, it is generated.
+3. Reload the video list in the admin: the status changes from `pending` to
+   `processing` to `ready`. Only `ready` videos appear in the frontend.
+   Conversions run one after another (one RQ worker).
+
 ## Download sources
 
 | Title | File | Source |

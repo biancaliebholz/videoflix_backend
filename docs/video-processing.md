@@ -31,6 +31,19 @@
   `hls/<id>/` after FFmpeg succeeded, so players never see half-written
   playlists and a failed reconversion keeps the previous version.
 
+## Replacing and deleting videos
+
+- A new video file on an existing video sets it back to `pending`, deletes
+  the old original and renditions after the commit and queues a new
+  conversion. Changing only title, description or category queues nothing.
+- Deleting a video removes original, thumbnail and HLS folders (including the
+  temporary `hls/<id>.converting/` and `hls/<id>.old/`) after the commit.
+- If a video is deleted while its job is still running, the job notices this
+  when it saves the result and removes the files it created afterwards
+  (renditions, thumbnail). Errors caused by the deletion do not mark the job
+  as failed; errors of existing videos still do. The cleanup can run
+  repeatedly without side effects.
+
 ## Measured performance (2026-11-02)
 
 Environment: Docker Desktop on macOS, container with 16 CPU cores and 8 GB RAM,
