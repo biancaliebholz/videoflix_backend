@@ -23,32 +23,43 @@ class VideoListView(ListAPIView):
     queryset = Video.objects.filter(status=Video.Status.READY)
 
 
-class HLSPlaylistView(APIView):
-    """HLS playlist of one resolution (JWT cookie required)."""
+class HLSFileView(APIView):
+    """Base view that streams an HLS file of a ready video (JWT cookie)."""
+
+    content_type = None
+
+    def file_response(self, movie_id, path):
+        """Return the file as ``FileResponse`` or raise ``Http404``."""
+        is_ready = Video.objects.filter(
+            pk=movie_id, status=Video.Status.READY
+        ).exists()
+        if not is_ready or path is None or not path.is_file():
+            raise Http404("Video or manifest not found.")
+        response = FileResponse(
+            path.open("rb"), content_type=self.content_type
+        )
+        response["Cache-Control"] = "private, max-age=3600"
+        return response
+
+
+class HLSPlaylistView(HLSFileView):
+    """HLS playlist of one resolution."""
+
+    content_type = PLAYLIST_CONTENT_TYPE
 
     def get(self, request, movie_id, resolution):
         path = playlist_path(movie_id, resolution)
-        return hls_file_response(movie_id, path, PLAYLIST_CONTENT_TYPE)
+        return self.file_response(movie_id, path)
 
 
-class HLSSegmentView(APIView):
+class HLSSegmentView(HLSFileView):
     """MPEG-TS segment; accepts ``000.ts`` and ``segment_000.ts``."""
+
+    content_type = SEGMENT_CONTENT_TYPE
 
     def get(self, request, movie_id, resolution, segment):
         path = segment_path(movie_id, resolution, segment)
-        return hls_file_response(movie_id, path, SEGMENT_CONTENT_TYPE)
-
-
-def hls_file_response(movie_id, path, content_type):
-    """Stream an HLS file of a ready video or raise ``Http404``."""
-    is_ready = Video.objects.filter(
-        pk=movie_id, status=Video.Status.READY
-    ).exists()
-    if not is_ready or path is None or not path.is_file():
-        raise Http404("Video or manifest not found.")
-    response = FileResponse(path.open("rb"), content_type=content_type)
-    response["Cache-Control"] = "private, max-age=3600"
-    return response
+        return self.file_response(movie_id, path)
 
 
 def thumbnail_view(request, path):
