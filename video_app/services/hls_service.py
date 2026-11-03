@@ -15,6 +15,8 @@ from pathlib import Path
 from video_app.utils import PLAYLIST_NAME, RESOLUTIONS
 
 SEGMENT_SECONDS = 4
+CONVERTING_SUFFIX = ".converting"
+OLD_SUFFIX = ".old"
 MAX_BITRATES = {"480p": "1400k", "720p": "3000k", "1080p": "5500k"}
 
 
@@ -53,7 +55,7 @@ def extract_thumbnail(source, target, at_seconds):
 def convert_to_hls(source, output_dir, has_audio):
     """Write all renditions to ``output_dir/<resolution>/`` atomically."""
     output_dir = Path(output_dir)
-    work_dir = output_dir.with_name(f"{output_dir.name}.converting")
+    work_dir = output_dir.with_name(f"{output_dir.name}{CONVERTING_SUFFIX}")
     shutil.rmtree(work_dir, ignore_errors=True)
     _create_rendition_dirs(work_dir)
     try:
@@ -132,7 +134,7 @@ def _replace_dir(new_dir, target_dir):
 
     A failed conversion never reaches this point and keeps the old files.
     """
-    old_dir = target_dir.with_name(f"{target_dir.name}.old")
+    old_dir = target_dir.with_name(f"{target_dir.name}{OLD_SUFFIX}")
     shutil.rmtree(old_dir, ignore_errors=True)
     if target_dir.exists():
         target_dir.rename(old_dir)

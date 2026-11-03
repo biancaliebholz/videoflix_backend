@@ -1,5 +1,6 @@
 """Tests for the processing service, tasks and model signals."""
 
+from pathlib import Path
 from unittest.mock import patch
 
 from django.core.files.base import ContentFile
@@ -22,11 +23,32 @@ from video_app.tests.helpers import (
 from video_app.utils import hls_dir
 
 QUEUE_PATH = "video_app.signals.queue_video_processing"
+CONVERT_PATH = "video_app.services.processing_service.convert_to_hls"
+THUMBNAIL_PATH = "video_app.services.processing_service.extract_thumbnail"
 
 
 def upload_real_video(media_root):
     source = make_test_video(media_root / "upload.mp4", seconds=5)
     return SimpleUploadedFile("upload.mp4", source.read_bytes())
+
+
+def media_files(media_root):
+    return {path for path in media_root.rglob("*") if path.is_file()}
+
+
+def write_output(source, output_dir, has_audio):
+    """Fake conversion result: renamed output plus a leftover work folder."""
+    output_dir = Path(output_dir)
+    write_hls_files(int(output_dir.name))
+    output_dir.with_name(f"{output_dir.name}.converting").mkdir()
+
+
+def hls_folders(video_id):
+    """Existing output and work folders (``.converting``/``.old``)."""
+    folder = hls_dir(video_id)
+    names = (folder.name, f"{folder.name}.converting", f"{folder.name}.old")
+    paths = [folder.with_name(name) for name in names]
+    return [path for path in paths if path.exists()]
 
 
 class ProcessVideoTests(TempMediaMixin, TestCase):
@@ -64,6 +86,59 @@ class ProcessVideoTests(TempMediaMixin, TestCase):
     def test_deleted_video_is_skipped(self):
         self.assertIsNone(process_video(999999))
 
+    def test_video_deleted_during_conversion_leaves_no_files(self):
+        video, before = self.pending_video()
+        with patch(CONVERT_PATH, side_effect=self.delete_then_write(video)):
+            process_video(video.pk)
+        self.assert_no_leftovers(video, before)
+
+    def test_video_deleted_before_thumbnail_leaves_no_files(self):
+        video, before = self.pending_video()
+        extract = self.delete_then_thumbnail(video)
+        with (
+            patch(THUMBNAIL_PATH, side_effect=extract),
+            patch(CONVERT_PATH, side_effect=write_output),
+        ):
+            process_video(video.pk)
+        self.assert_no_leftovers(video, before)
+
+    def test_failed_conversion_of_deleted_video_is_cleaned_silently(self):
+        video, before = self.pending_video()
+        error = FileNotFoundError("work folder removed by the deletion")
+        with patch(CONVERT_PATH,
+                   side_effect=self.delete_then_write(video, error)):
+            process_video(video.pk)
+        self.assert_no_leftovers(video, before)
+
+    def pending_video(self):
+        upload = upload_real_video(self.media_root)
+        before = media_files(self.media_root)
+        return create_video(Video.Status.PENDING, video_file=upload), before
+
+    def assert_no_leftovers(self, video, files_before):
+        self.assertFalse(Video.objects.filter(pk=video.pk).exists())
+        self.assertEqual(media_files(self.media_root), files_before)
+        self.assertEqual(hls_folders(video.pk), [])
+
+    def delete_video(self, video):
+        """Delete like the admin, including the on-commit file cleanup."""
+        with self.captureOnCommitCallbacks(execute=True):
+            Video.objects.filter(pk=video.pk).delete()
+
+    def delete_then_write(self, video, error=None):
+        def convert(source, output_dir, has_audio):
+            self.delete_video(video)
+            write_output(source, output_dir, has_audio)
+            if error:
+                raise error
+        return convert
+
+    def delete_then_thumbnail(self, video):
+        def extract(source, target, at_seconds):
+            self.delete_video(video)
+            Path(target).write_bytes(b"jpeg")
+        return extract
+
     def test_delete_video_files_removes_everything(self):
         video = create_video(thumbnail=ContentFile(b"jpg", name="t.jpg"))
         folder = write_hls_files(video.pk)
@@ -73,6 +148,14 @@ class ProcessVideoTests(TempMediaMixin, TestCase):
         self.assertFalse(storage.exists(video.video_file.name))
         self.assertFalse(storage.exists(video.thumbnail.name))
         self.assertFalse(folder.exists())
+
+    def test_delete_video_files_removes_work_folders_repeatedly(self):
+        write_hls_files(999)
+        for suffix in (".converting", ".old"):
+            hls_dir(999).with_name(f"999{suffix}").mkdir()
+        delete_video_files(None, None, 999)
+        delete_video_files(None, None, 999)
+        self.assertEqual(hls_folders(999), [])
 
 
 class VideoTaskTests(TestCase):

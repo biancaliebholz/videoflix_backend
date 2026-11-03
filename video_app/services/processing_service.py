@@ -9,6 +9,8 @@ from django.core.files.storage import default_storage
 
 from video_app.models import Video
 from video_app.services.hls_service import (
+    CONVERTING_SUFFIX,
+    OLD_SUFFIX,
     convert_to_hls,
     extract_thumbnail,
     probe_video,
@@ -17,7 +19,7 @@ from video_app.utils import hls_dir
 
 
 def process_video(video_id):
-    """Convert a video and track its status; errors also fail the RQ job."""
+    """Convert a video, track its status, clean up if it was deleted."""
     video = Video.objects.filter(pk=video_id).first()
     if video is None:
         return
@@ -25,17 +27,22 @@ def process_video(video_id):
     try:
         _convert(video)
     except Exception as error:
-        _update(video, status=Video.Status.FAILED, processing_error=str(error))
-        raise
-    _update(video, status=Video.Status.READY)
+        if _update(video, status=Video.Status.FAILED,
+                   processing_error=str(error)):
+            raise
+    if not _update(video, status=Video.Status.READY):
+        _discard_output(video)
 
 
 def delete_video_files(video_file_name, thumbnail_name, video_id):
-    """Delete original, thumbnail and HLS folder; missing files are fine."""
+    """Delete original, thumbnail and HLS folders; safe to run repeatedly."""
     for name in (video_file_name, thumbnail_name):
         if name:
             default_storage.delete(name)
-    shutil.rmtree(hls_dir(video_id), ignore_errors=True)
+    folder = hls_dir(video_id)
+    for suffix in ("", CONVERTING_SUFFIX, OLD_SUFFIX):
+        path = folder.with_name(f"{folder.name}{suffix}")
+        shutil.rmtree(path, ignore_errors=True)
 
 
 def _convert(video):
@@ -57,8 +64,18 @@ def _create_thumbnail(video, source, duration):
     _update(video, thumbnail=video.thumbnail.name)
 
 
+def _discard_output(video):
+    """Remove files that a job created for an already deleted video."""
+    delete_video_files(video.video_file.name, video.thumbnail.name, video.pk)
+
+
 def _update(video, **fields):
-    """Write fields without ``save()`` so no model signals fire."""
-    Video.objects.filter(pk=video.pk).update(**fields)
+    """Write fields without ``save()``; return the number of updated rows.
+
+    Using ``update()`` keeps model signals from firing. Zero rows means the
+    video was deleted in the meantime.
+    """
+    updated = Video.objects.filter(pk=video.pk).update(**fields)
     for name, value in fields.items():
         setattr(video, name, value)
+    return updated
