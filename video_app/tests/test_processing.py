@@ -14,8 +14,14 @@ from video_app.services.hls_service import FFmpegError
 from video_app.services.processing_service import (
     delete_video_files,
     process_video,
+    regenerate_thumbnail,
 )
-from video_app.tasks import process_video_task, queue_video_processing
+from video_app.tasks import (
+    generate_thumbnail_task,
+    process_video_task,
+    queue_thumbnail_generation,
+    queue_video_processing,
+)
 from video_app.tests.helpers import (
     TempMediaMixin,
     create_video,
@@ -27,6 +33,7 @@ from video_app.utils import hls_dir
 QUEUE_PATH = "video_app.signals.queue_video_processing"
 CONVERT_PATH = "video_app.services.processing_service.convert_to_hls"
 THUMBNAIL_PATH = "video_app.services.processing_service.extract_thumbnail"
+GENERATION_PATH = "video_app.signals.queue_thumbnail_generation"
 
 
 def upload_real_video(media_root):
@@ -175,6 +182,16 @@ class VideoTaskTests(TestCase):
         process_video_task(3)
         process.assert_called_once_with(3)
 
+    @patch("video_app.tasks.regenerate_thumbnail")
+    def test_thumbnail_task_delegates_to_service(self, regenerate):
+        generate_thumbnail_task(3)
+        regenerate.assert_called_once_with(3)
+
+    @patch("video_app.tasks.django_rq.enqueue")
+    def test_thumbnail_generation_is_queued(self, enqueue):
+        queue_thumbnail_generation(3)
+        enqueue.assert_called_once_with(generate_thumbnail_task, 3)
+
     @override_settings(VIDEO_PROCESSING_TIMEOUT=1234)
     @patch("video_app.tasks.django_rq.enqueue")
     def test_job_gets_long_timeout(self, enqueue):
@@ -218,3 +235,77 @@ class VideoSignalTests(TempMediaMixin, TestCase):
             video.delete()
         self.assertFalse(folder.exists())
         self.assertFalse(Video.video_file.field.storage.exists(name))
+
+
+@patch(QUEUE_PATH)
+@patch(GENERATION_PATH)
+class ThumbnailSignalTests(TempMediaMixin, TestCase):
+
+    def test_removed_thumbnail_is_deleted_and_regenerated(self, generate,
+                                                          queue):
+        video = create_video(thumbnail=ContentFile(b"jpg", name="own.jpg"))
+        old_name = video.thumbnail.name
+        self.save_with(video, thumbnail=None)
+        self.assertFalse(video.thumbnail.storage.exists(old_name))
+        generate.assert_called_once_with(video.pk)
+        queue.assert_not_called()
+
+    def test_replaced_thumbnail_deletes_only_the_old_file(self, generate,
+                                                          queue):
+        video = create_video(thumbnail=ContentFile(b"jpg", name="own.jpg"))
+        old_name = video.thumbnail.name
+        self.save_with(video, thumbnail=ContentFile(b"new", name="new.jpg"))
+        storage = video.thumbnail.storage
+        self.assertFalse(storage.exists(old_name))
+        self.assertTrue(storage.exists(video.thumbnail.name))
+        generate.assert_not_called()
+
+    def test_unchanged_or_first_thumbnail_triggers_nothing(self, generate,
+                                                           queue):
+        with_thumbnail = create_video(
+            thumbnail=ContentFile(b"jpg", name="own.jpg"))
+        self.save_with(with_thumbnail, title="New title")
+        without_thumbnail = create_video()
+        self.save_with(without_thumbnail,
+                       thumbnail=ContentFile(b"jpg", name="first.jpg"))
+        storage = with_thumbnail.thumbnail.storage
+        self.assertTrue(storage.exists(with_thumbnail.thumbnail.name))
+        generate.assert_not_called()
+
+    def save_with(self, video, **fields):
+        """Save changed fields like the admin, running on-commit hooks."""
+        with self.captureOnCommitCallbacks(execute=True):
+            for name, value in fields.items():
+                setattr(video, name, value)
+            video.save()
+
+
+class RegenerateThumbnailTests(TempMediaMixin, TestCase):
+
+    def test_ready_video_gets_a_new_thumbnail_from_ffmpeg(self):
+        video = create_video(video_file=upload_real_video(self.media_root),
+                             duration=5)
+        regenerate_thumbnail(video.pk)
+        video.refresh_from_db()
+        self.assertTrue(video.thumbnail.name.startswith("thumbnails/"))
+        self.assertTrue(video.thumbnail.storage.exists(video.thumbnail.name))
+
+    @patch(THUMBNAIL_PATH)
+    def test_skips_videos_with_thumbnail_or_not_ready(self, extract):
+        pending = create_video(Video.Status.PENDING)
+        ready = create_video(thumbnail=ContentFile(b"jpg", name="own.jpg"))
+        for video in (pending, ready):
+            regenerate_thumbnail(video.pk)
+        extract.assert_not_called()
+
+    def test_thumbnail_of_video_deleted_meanwhile_is_removed(self):
+        video = create_video(duration=5)
+        before = media_files(self.media_root)
+
+        def extract_then_delete(source, target, at_seconds):
+            Path(target).write_bytes(b"jpeg")
+            Video.objects.filter(pk=video.pk).delete()
+
+        with patch(THUMBNAIL_PATH, side_effect=extract_then_delete):
+            regenerate_thumbnail(video.pk)
+        self.assertEqual(media_files(self.media_root), before)

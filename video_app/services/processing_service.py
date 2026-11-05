@@ -34,15 +34,32 @@ def process_video(video_id):
         _discard_output(video)
 
 
+def regenerate_thumbnail(video_id):
+    """Recreate the thumbnail of a ready video after it was removed."""
+    video = Video.objects.filter(
+        pk=video_id, status=Video.Status.READY, thumbnail=""
+    ).first()
+    if video is None:
+        return
+    source = video.video_file.path
+    if not _create_thumbnail(video, source, video.duration or 0):
+        delete_stored_file(video.thumbnail.name)
+
+
 def delete_video_files(video_file_name, thumbnail_name, video_id):
     """Delete original, thumbnail and HLS folders; safe to run repeatedly."""
     for name in (video_file_name, thumbnail_name):
-        if name:
-            default_storage.delete(name)
+        delete_stored_file(name)
     folder = hls_dir(video_id)
     for suffix in ("", CONVERTING_SUFFIX, OLD_SUFFIX):
         path = folder.with_name(f"{folder.name}{suffix}")
         shutil.rmtree(path, ignore_errors=True)
+
+
+def delete_stored_file(name):
+    """Delete an uploaded or generated media file; empty names are ignored."""
+    if name:
+        default_storage.delete(name)
 
 
 def _convert(video):
@@ -55,13 +72,16 @@ def _convert(video):
 
 
 def _create_thumbnail(video, source, duration):
-    """Use a frame at 10 % of the runtime, past black intro frames."""
+    """Save a frame at 10 % of the runtime, past black intro frames.
+
+    Returns the number of updated rows; 0 means the video was deleted.
+    """
     with tempfile.TemporaryDirectory() as tmp_dir:
         target = Path(tmp_dir) / f"{video.pk}.jpg"
         extract_thumbnail(source, target, at_seconds=duration * 0.1)
         with target.open("rb") as image:
             video.thumbnail.save(target.name, File(image), save=False)
-    _update(video, thumbnail=video.thumbnail.name)
+    return _update(video, thumbnail=video.thumbnail.name)
 
 
 def _discard_output(video):
