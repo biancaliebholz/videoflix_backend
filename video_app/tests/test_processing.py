@@ -3,10 +3,12 @@
 from pathlib import Path
 from unittest.mock import patch
 
+from django.contrib.staticfiles import finders
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 
+from video_app.api.serializers import DEFAULT_THUMBNAIL
 from video_app.models import Video
 from video_app.services.hls_service import FFmpegError
 from video_app.services.processing_service import (
@@ -148,6 +150,14 @@ class ProcessVideoTests(TempMediaMixin, TestCase):
         self.assertFalse(storage.exists(video.video_file.name))
         self.assertFalse(storage.exists(video.thumbnail.name))
         self.assertFalse(folder.exists())
+
+    def test_deleting_video_without_thumbnail_keeps_default_image(self):
+        video = create_video()
+        default_image = Path(finders.find(DEFAULT_THUMBNAIL))
+        size = default_image.stat().st_size
+        delete_video_files(video.video_file.name, video.thumbnail.name,
+                           video.pk)
+        self.assertEqual(default_image.stat().st_size, size)
 
     def test_delete_video_files_removes_work_folders_repeatedly(self):
         write_hls_files(999)

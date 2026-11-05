@@ -2,12 +2,14 @@
 
 from datetime import timedelta
 
+from django.contrib.staticfiles import finders
 from django.core.files.base import ContentFile
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from video_app.api.serializers import DEFAULT_THUMBNAIL
 from video_app.models import Video
 from video_app.tests.helpers import (
     TempMediaMixin,
@@ -15,6 +17,8 @@ from video_app.tests.helpers import (
     create_video,
     write_hls_files,
 )
+
+DEFAULT_THUMBNAIL_URL = f"http://testserver/static/{DEFAULT_THUMBNAIL}"
 
 
 class VideoListApiTests(TempMediaMixin, APITestCase):
@@ -43,6 +47,22 @@ class VideoListApiTests(TempMediaMixin, APITestCase):
         self.assertTrue(item["thumbnail_url"].startswith(
             "http://testserver/media/thumbnails/"
         ))
+
+    def test_missing_thumbnail_falls_back_to_default_image(self):
+        authenticate(self.client)
+        create_video()
+        item = self.client.get(self.url).data[0]
+        self.assertEqual(item["thumbnail_url"], DEFAULT_THUMBNAIL_URL)
+
+    def test_thumbnail_without_file_falls_back_to_default_image(self):
+        authenticate(self.client)
+        video = create_video(thumbnail=ContentFile(b"jpg", name="cover.jpg"))
+        video.thumbnail.storage.delete(video.thumbnail.name)
+        item = self.client.get(self.url).data[0]
+        self.assertEqual(item["thumbnail_url"], DEFAULT_THUMBNAIL_URL)
+
+    def test_default_thumbnail_is_a_static_file(self):
+        self.assertIsNotNone(finders.find(DEFAULT_THUMBNAIL))
 
     def test_response_is_a_plain_json_array(self):
         authenticate(self.client)
