@@ -38,6 +38,7 @@ class Video(models.Model):
         ROMANCE = "Romance", "Romance"
         SCI_FI = "Sci-Fi", "Sci-Fi"
         THRILLER = "Thriller", "Thriller"
+        OTHER = "Other", "Other"
 
     title = models.CharField(max_length=255)
     description = models.TextField()

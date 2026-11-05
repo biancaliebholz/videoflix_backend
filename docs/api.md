@@ -182,7 +182,8 @@ Parameters from the reset link (valid 24 h, invalid after use).
   only public media files.
 - `category` is one of the fixed values `Action`, `Adventure`, `Animation`,
   `Comedy`, `Documentary`, `Drama`, `Fantasy`, `Horror`, `Romance`, `Sci-Fi`,
-  `Thriller` (chosen in the admin); the frontend groups the videos by it.
+  `Thriller`, `Other` (chosen in the admin); the frontend groups the videos
+  by it.
 
 ### 9. GET `/api/video/<movie_id>/<resolution>/index.m3u8`
 

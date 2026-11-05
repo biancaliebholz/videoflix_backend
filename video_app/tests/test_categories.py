@@ -11,7 +11,7 @@ from video_app.models import Video
 from video_app.tests.helpers import TempMediaMixin, create_video
 
 BEFORE_CHOICES = ("video_app", "0001_initial")
-WITH_CHOICES = ("video_app", "0002_category_choices")
+WITH_CHOICES = ("video_app", "0003_add_other_category")
 
 
 class CategoryChoiceTests(TempMediaMixin, TestCase):
@@ -20,6 +20,11 @@ class CategoryChoiceTests(TempMediaMixin, TestCase):
         for value in ("Action", "Animation", "Comedy", "Drama"):
             with self.subTest(category=value):
                 self.assertIn(value, Video.Category.values)
+
+    def test_other_is_the_twelfth_and_last_choice(self):
+        self.assertEqual(len(Video.Category.values), 12)
+        self.assertEqual(Video.Category.values[-1], "Other")
+        create_video(category=Video.Category.OTHER).full_clean()
 
     def test_values_equal_labels_so_the_api_output_is_unchanged(self):
         for value, label in Video.Category.choices:
