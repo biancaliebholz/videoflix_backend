@@ -64,11 +64,11 @@ def delete_stored_file(name):
 
 def _convert(video):
     source = video.video_file.path
-    info = probe_video(source)
-    _update(video, duration=info.duration)
+    video_info = probe_video(source)
+    _update(video, duration=video_info.duration)
     if not video.thumbnail:
-        _create_thumbnail(video, source, info.duration)
-    convert_to_hls(source, hls_dir(video.pk), info.has_audio)
+        _create_thumbnail(video, source, video_info.duration)
+    convert_to_hls(source, hls_dir(video.pk), video_info.has_audio)
 
 
 def _create_thumbnail(video, source, duration):

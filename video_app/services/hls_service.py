@@ -32,7 +32,7 @@ class VideoInfo:
 
 def probe_video(source):
     """Return duration and audio flag; ``FFmpegError`` if there is no video."""
-    output = _run([
+    output = _run_command([
         "ffprobe", "-v", "error", "-print_format", "json",
         "-show_format", "-show_streams", str(source),
     ])
@@ -45,7 +45,7 @@ def probe_video(source):
 
 
 def extract_thumbnail(source, target, at_seconds):
-    _run([
+    _run_command([
         "ffmpeg", "-hide_banner", "-nostdin", "-y",
         "-ss", f"{at_seconds:.2f}", "-i", str(source),
         "-frames:v", "1", "-vf", "scale=640:-2", "-q:v", "3", str(target),
@@ -59,7 +59,7 @@ def convert_to_hls(source, output_dir, has_audio):
     shutil.rmtree(work_dir, ignore_errors=True)
     _create_rendition_dirs(work_dir)
     try:
-        _run(build_hls_command(source, work_dir, has_audio))
+        _run_command(build_hls_command(source, work_dir, has_audio))
     except FFmpegError:
         shutil.rmtree(work_dir, ignore_errors=True)
         raise
@@ -90,13 +90,13 @@ def _scale_filter(names):
 
 
 def _stream_args(index, name, has_audio):
-    rate = MAX_BITRATES[name]
+    max_bitrate = MAX_BITRATES[name]
     args = ["-map", f"[v{name}]"]
     if has_audio:
         args += ["-map", "0:a:0"]
     return args + [
-        f"-maxrate:v:{index}", rate,
-        f"-bufsize:v:{index}", f"{int(rate[:-1]) * 2}k",
+        f"-maxrate:v:{index}", max_bitrate,
+        f"-bufsize:v:{index}", f"{int(max_bitrate[:-1]) * 2}k",
     ]
 
 
@@ -142,7 +142,7 @@ def _replace_dir(new_dir, target_dir):
     shutil.rmtree(old_dir, ignore_errors=True)
 
 
-def _run(command):
+def _run_command(command):
     """Run a command; raise ``FFmpegError`` with the end of its stderr."""
     result = subprocess.run(command, capture_output=True, text=True)
     if result.returncode != 0:

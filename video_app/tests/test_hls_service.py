@@ -75,9 +75,9 @@ class FFmpegIntegrationTests(TempMediaMixin, SimpleTestCase):
         convert_to_hls(cls.source, cls.output, has_audio=True)
 
     def test_probe_reports_duration_and_audio(self):
-        info = probe_video(self.source)
-        self.assertAlmostEqual(info.duration, 9, delta=0.2)
-        self.assertTrue(info.has_audio)
+        video_info = probe_video(self.source)
+        self.assertAlmostEqual(video_info.duration, 9, delta=0.2)
+        self.assertTrue(video_info.has_audio)
 
     def test_probe_rejects_files_without_video(self):
         text_file = self.media_root / "notes.mp4"
