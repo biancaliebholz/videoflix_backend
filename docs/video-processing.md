@@ -44,6 +44,19 @@
   as failed; errors of existing videos still do. The cleanup can run
   repeatedly without side effects.
 
+## Thumbnails
+
+- Without an uploaded thumbnail, the conversion job saves a frame at 10 % of
+  the runtime.
+- Removing a thumbnail in the admin (*Clear*) deletes its file and queues a
+  short RQ job that creates a new one with the same FFmpeg extraction.
+  Replacing a thumbnail deletes the old file.
+- Until a thumbnail exists, or if its file is missing, the API returns the
+  neutral default image `video_app/static/video_app/default_thumbnail.jpg`
+  as `thumbnail_url`, so the frontend never receives `null`. The default image
+  is a static file and is never stored in a video, so deleting videos cannot
+  remove it. New static files are collected when the `web` container starts.
+
 ## Measured performance (2026-11-02)
 
 Environment: Docker Desktop on macOS, container with 16 CPU cores and 8 GB RAM,

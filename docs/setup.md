@@ -141,8 +141,9 @@ Admin: **http://127.0.0.1:8000/admin/**, log in with `DJANGO_SUPERUSER_EMAIL`
 and `DJANGO_SUPERUSER_PASSWORD` (the login field is the email address).
 
 - **Users:** email-based user admin with activation status.
-- **Videos:** upload title, description, category and video file (thumbnail
-  optional, otherwise generated); watch the processing status, duration and
+- **Videos:** upload title, description, category (selected from a fixed
+  list) and video file (thumbnail optional, otherwise generated; a removed
+  thumbnail is generated again); watch the processing status, duration and
   errors; action *Convert selected videos again*.
 
 Another superuser:

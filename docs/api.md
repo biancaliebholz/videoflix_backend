@@ -176,8 +176,13 @@ Parameters from the reset link (valid 24 h, invalid after use).
 
 **401** `{"detail": "Authentication credentials were not provided."}`
 
-Thumbnails are the only public media files; the frontend groups the videos
-by `category`.
+- `thumbnail_url` is always an absolute URL, never `null`. Without a usable
+  thumbnail (none uploaded, removed or file missing) it points to the neutral
+  default image `/static/video_app/default_thumbnail.jpg`. Thumbnails are the
+  only public media files.
+- `category` is one of the fixed values `Action`, `Adventure`, `Animation`,
+  `Comedy`, `Documentary`, `Drama`, `Fantasy`, `Horror`, `Romance`, `Sci-Fi`,
+  `Thriller` (chosen in the admin); the frontend groups the videos by it.
 
 ### 9. GET `/api/video/<movie_id>/<resolution>/index.m3u8`
 

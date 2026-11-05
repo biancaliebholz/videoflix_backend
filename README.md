@@ -42,11 +42,12 @@ and HLS streaming in 480p, 720p and 1080p.
 - Token refresh, logout with refresh-token blacklist and revocation of the current access token
 - Password reset by email (link valid for 24 hours)
 - Video upload in the Django admin, conversion in the background with **Django RQ**
-- One FFmpeg run creates HLS renditions in **480p, 720p and 1080p** plus a thumbnail;
+- One FFmpeg run creates HLS renditions in **480p, 720p and 1080p** plus a thumbnail
+  (default image as fallback, removed thumbnails are generated again);
   the quality is chosen in the player (one playlist per resolution, no automatic bitrate switching)
 - Authenticated delivery of playlists and segments, newest videos first, grouped by category in the frontend
 - HTML emails based on the Developer Akademie design templates
-- 147 automated tests, 100 % coverage of the application code, Postman collection for all endpoints
+- 166 automated tests, 100 % coverage of the application code, Postman collection for all endpoints
 
 ## Technologies & Architecture
 
@@ -178,7 +179,7 @@ and how to add them: [docs/demo-videos.md](docs/demo-videos.md).
 docker compose exec web python manage.py test
 ```
 
-147 tests (separate test database) cover models, serializers, services,
+166 tests (separate test database) cover models, serializers, services,
 tasks, signals, permissions and all endpoints; video tests run real FFmpeg.
 Coverage is **100 %** for `auth_app`, `video_app` and `core`, excluding
 migrations, tests and the Django-generated entry points `core/asgi.py` and
