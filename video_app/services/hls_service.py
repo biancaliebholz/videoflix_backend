@@ -26,6 +26,8 @@ class FFmpegError(RuntimeError):
 
 @dataclass(frozen=True)
 class VideoInfo:
+    """Facts about a source file that the conversion needs."""
+
     duration: float
     has_audio: bool
 
@@ -45,6 +47,7 @@ def probe_video(source):
 
 
 def extract_thumbnail(source, target, at_seconds):
+    """Save the frame at ``at_seconds`` as a 640 px wide JPEG to ``target``."""
     _run_command([
         "ffmpeg", "-hide_banner", "-nostdin", "-y",
         "-ss", f"{at_seconds:.2f}", "-i", str(source),
@@ -90,6 +93,7 @@ def _scale_filter(names):
 
 
 def _stream_args(index, name, has_audio):
+    """Map one scaled video (and the audio) with its bitrate cap."""
     max_bitrate = MAX_BITRATES[name]
     args = ["-map", f"[v{name}]"]
     if has_audio:
@@ -101,12 +105,12 @@ def _stream_args(index, name, has_audio):
 
 
 def _hls_args(output_dir, names, has_audio):
-    audio = ["-c:a", "aac", "-b:a", "128k", "-ac", "2"] if has_audio else []
+    """Encoder settings and HLS muxer options shared by all renditions."""
     return [
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "21",
         "-profile:v", "high", "-pix_fmt", "yuv420p",
         "-force_key_frames", f"expr:gte(t,n_forced*{SEGMENT_SECONDS})",
-        "-sc_threshold", "0", *audio,
+        "-sc_threshold", "0", *_audio_args(has_audio),
         "-f", "hls", "-hls_time", str(SEGMENT_SECONDS),
         "-hls_playlist_type", "vod", "-hls_flags", "independent_segments",
         "-hls_segment_filename",
@@ -116,7 +120,13 @@ def _hls_args(output_dir, names, has_audio):
     ]
 
 
+def _audio_args(has_audio):
+    """AAC stereo settings, or nothing for videos without sound."""
+    return ["-c:a", "aac", "-b:a", "128k", "-ac", "2"] if has_audio else []
+
+
 def _var_stream_map(names, has_audio):
+    """Tell FFmpeg which streams form a rendition and name its folder."""
     return " ".join(
         f"v:{index},a:{index},name:{name}" if has_audio
         else f"v:{index},name:{name}"
@@ -125,6 +135,7 @@ def _var_stream_map(names, has_audio):
 
 
 def _create_rendition_dirs(base_dir):
+    """FFmpeg does not create the per-resolution folders itself."""
     for name in RESOLUTIONS:
         (base_dir / name).mkdir(parents=True, exist_ok=True)
 

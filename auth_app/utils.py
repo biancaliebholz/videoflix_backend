@@ -21,6 +21,7 @@ class AccountActivationTokenGenerator(PasswordResetTokenGenerator):
     key_salt = "auth_app.utils.AccountActivationTokenGenerator"
 
     def _make_hash_value(self, user, timestamp):
+        """Include ``is_active`` so a used activation link stops working."""
         return f"{super()._make_hash_value(user, timestamp)}{user.is_active}"
 
 
@@ -28,6 +29,7 @@ account_activation_token = AccountActivationTokenGenerator()
 
 
 def encode_uid(user):
+    """URL-safe base64 primary key as used in activation and reset links."""
     return urlsafe_base64_encode(force_bytes(user.pk))
 
 
@@ -68,6 +70,7 @@ def set_auth_cookies(response, refresh_token):
 
 
 def delete_auth_cookies(response):
+    """Expire both cookies; path and SameSite must match the set cookies."""
     for name in AUTH_COOKIES:
         response.delete_cookie(
             name, path="/", samesite=settings.AUTH_COOKIE_SAMESITE

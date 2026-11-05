@@ -60,6 +60,7 @@ def blacklist_all_refresh_tokens(user):
 
 
 def _blacklist_refresh_token(raw_refresh):
+    """Blacklist the token; invalid or expired ones need no action."""
     try:
         RefreshToken(raw_refresh).blacklist()
     except TokenError:
@@ -67,6 +68,7 @@ def _blacklist_refresh_token(raw_refresh):
 
 
 def _revoke_access_token(raw_access):
+    """Store the token's ``jti`` in Redis until the token would expire."""
     try:
         token = AccessToken(raw_access)
     except TokenError:

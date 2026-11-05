@@ -63,6 +63,7 @@ def delete_stored_file(name):
 
 
 def _convert(video):
+    """Probe the source, then create a missing thumbnail and the HLS files."""
     source = video.video_file.path
     video_info = probe_video(source)
     _update(video, duration=video_info.duration)

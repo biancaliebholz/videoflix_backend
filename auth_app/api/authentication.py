@@ -15,6 +15,7 @@ class CookieJWTAuthentication(JWTAuthentication):
     """
 
     def authenticate(self, request):
+        """Return ``(user, token)`` from the cookie or ``None`` without it."""
         raw_token = request.COOKIES.get(ACCESS_COOKIE)
         if not raw_token:
             return None

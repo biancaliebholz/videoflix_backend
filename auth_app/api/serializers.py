@@ -47,6 +47,7 @@ class RegistrationSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
+        """Check that both passwords match and pass Django's validators."""
         if attrs["password"] != attrs["confirmed_password"]:
             raise serializers.ValidationError(
                 {"confirmed_password": "Passwords do not match."}
@@ -62,6 +63,8 @@ class RegistrationSerializer(serializers.Serializer):
 
 
 class LoginSerializer(serializers.Serializer):
+    """Credentials; puts the authenticated user into ``validated_data``."""
+
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
 
@@ -93,6 +96,7 @@ class PasswordConfirmSerializer(serializers.Serializer):
     )
 
     def validate(self, attrs):
+        """Check that both passwords match and pass Django's validators."""
         if attrs["new_password"] != attrs["confirm_password"]:
             raise serializers.ValidationError(
                 {"confirm_password": "Passwords do not match."}

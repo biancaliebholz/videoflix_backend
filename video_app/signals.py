@@ -60,12 +60,14 @@ def delete_files_of_deleted_video(sender, instance, **kwargs):
 
 
 def _restart_processing(video_id, previous_file):
+    """Remove the files of a replaced upload and convert the new one."""
     if previous_file:
         delete_video_files(previous_file, None, video_id)
     queue_video_processing(video_id)
 
 
 def _replace_thumbnail(video_id, previous_thumbnail, removed):
+    """Delete the old thumbnail file; queue a new one if it was removed."""
     delete_stored_file(previous_thumbnail)
     if removed:
         queue_thumbnail_generation(video_id)

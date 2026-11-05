@@ -17,6 +17,8 @@ class Video(models.Model):
     """
 
     class Status(models.TextChoices):
+        """Conversion lifecycle: pending → processing → ready or failed."""
+
         PENDING = "pending", "Pending"
         PROCESSING = "processing", "Processing"
         READY = "ready", "Ready"

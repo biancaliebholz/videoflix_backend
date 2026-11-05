@@ -20,12 +20,14 @@ LOGO_CID = "videoflix-logo"
 
 
 def send_activation_email(user):
+    """Send the link to the frontend's activation page."""
     token = account_activation_token.make_token(user)
     link = build_frontend_link("activate.html", encode_uid(user), token)
     send_templated_email(user, "Confirm your email", "activation", link)
 
 
 def send_password_reset_email(user):
+    """Send the link to the frontend's page for a new password."""
     token = default_token_generator.make_token(user)
     page = "confirm_password.html"
     link = build_frontend_link(page, encode_uid(user), token)
@@ -54,6 +56,7 @@ def _render(template_name, extension, context):
 
 
 def _inline_logo():
+    """Logo as inline attachment, referenced by ``cid:`` in the HTML."""
     logo = MIMEImage(LOGO_FILE.read_bytes(), _subtype="png")
     logo.add_header("Content-ID", f"<{LOGO_CID}>")
     logo.add_header("Content-Disposition", "inline", filename="logo.png")
