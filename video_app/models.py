@@ -22,9 +22,24 @@ class Video(models.Model):
         READY = "ready", "Ready"
         FAILED = "failed", "Failed"
 
+    class Category(models.TextChoices):
+        """Genres; value and label match, the frontend groups by the value."""
+
+        ACTION = "Action", "Action"
+        ADVENTURE = "Adventure", "Adventure"
+        ANIMATION = "Animation", "Animation"
+        COMEDY = "Comedy", "Comedy"
+        DOCUMENTARY = "Documentary", "Documentary"
+        DRAMA = "Drama", "Drama"
+        FANTASY = "Fantasy", "Fantasy"
+        HORROR = "Horror", "Horror"
+        ROMANCE = "Romance", "Romance"
+        SCI_FI = "Sci-Fi", "Sci-Fi"
+        THRILLER = "Thriller", "Thriller"
+
     title = models.CharField(max_length=255)
     description = models.TextField()
-    category = models.CharField(max_length=100)
+    category = models.CharField(max_length=100, choices=Category.choices)
     video_file = models.FileField(
         upload_to=video_upload_path,
         validators=[FileExtensionValidator(VIDEO_EXTENSIONS)],

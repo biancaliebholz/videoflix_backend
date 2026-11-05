@@ -24,6 +24,20 @@ class VideoAdminTests(TempMediaMixin, TestCase):
                 response = self.client.get(reverse(name))
                 self.assertEqual(response.status_code, 200)
 
+    def test_category_is_a_dropdown_with_all_choices(self):
+        response = self.client.get(reverse("admin:video_app_video_add"))
+        self.assertContains(response, '<select name="category"')
+        for value in Video.Category.values:
+            self.assertContains(response, f'<option value="{value}"')
+
+    def test_unknown_category_is_rejected_by_the_form(self):
+        response = self.client.post(reverse("admin:video_app_video_add"), {
+            "title": "Film", "description": "Text", "category": "Musical",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("category", response.context["adminform"].form.errors)
+        self.assertFalse(Video.objects.exists())
+
     @patch("video_app.admin.queue_video_processing")
     def test_reprocess_action_resets_status_and_queues(self, queue):
         video = create_video(Video.Status.FAILED, processing_error="boom")
